@@ -1,248 +1,242 @@
-#include "list.h"
-#include <stdio.h>
+#include<stdio.h>
 #include <stdlib.h>
+typedef struct vector {
+    float re;
+    float im;
+    int row;
+    int column;
+    int max_row, max_column;
+    struct vector *next;
+}Node;
 
-Node *create(double key) // создание корня дерева
+
+Node *create() // создание корня дерева
 {
     Node *tmp = malloc(sizeof(Node));
-    tmp -> key = key;
-    tmp -> next = tmp -> prev = NULL;
+    tmp -> re = tmp -> im = 0;
+    tmp -> row = tmp -> column = 0;
+    tmp -> next = NULL;
     return tmp;
 }
 
-Node *add_left(Node *root, double key){
-    Node *tmp = create(key);
-    tmp->next = root;
-    root->prev = tmp;
-    root = tmp;
-    return root;
+
+Node *add(Node *root) // добавление узла дерева
+{
+    Node *new_root = malloc(sizeof(Node));
+    new_root = create();
+
+    while(root->next) // root->brother != NULL
+        root = root -> next;  // дошли до последней ненудевлой ноды
+    root -> next = new_root; // забили в нулевого брата ноду new_root
+    return new_root;
 }
 
-Node *add_right(List *list, double key){
-    Node *tmp = create(key);
-    Node *last = list->tail;
-    last->next = tmp;
-    tmp->prev = last;
-    list->tail = tmp;
-    return list->tail;
+int get_row(Node *root){
+    return root->max_row;
 }
 
-void list_print(Node *root, List *list) {
-    if (list->size == 0) {
-        printf("Список пуст\n");
-        return;
-    }
-    while (root) {
-        printf("%lf ", root->key);
-        root = root->next;
-    }
-    printf("\n");
+int get_column(Node *root){
+    return root->max_column;
 }
 
-Node *find_node(Node *root, double value){
-    int i=1;
-    while(i<value) {
-        root = root->next;
-        i++;
-    }
-    return root;
-}
 
-Node *add_node(Node *root, List *list, double key){
-    Node *tmp = create(key);
-    Node *root_next = root->next;
+// сначала нужно проинициализировать потом запринтить через структуру
 
-    root->next = tmp;
-    tmp->prev = root;
-    tmp->next = root_next;
-    root_next->prev = tmp;
-    return list->head;
-}
+Node *init_vector(Node *root){
+    float re, im;
+    int row, column;
+    Node *root2 = root;
 
-Node *delete_node(Node *root_1, Node *root,  List *list){
-    if(!root->prev && !root->next){
-        Node *tmp;
-        list->tail = NULL;
-        free(root);
-        return NULL;
-    }
-    else if(!root->prev){
-        Node *tmp;
-        tmp = root->next;
-        tmp->prev = NULL;
-        root->next = NULL;
-        free(root);
-        return tmp;
-    }
-    else if(!root->next) {
-        Node *tmp;
-        tmp = root->prev;
-        root->prev = NULL;
-        tmp->next = NULL;
-        list->tail = tmp;
-        free(root);
-        return root_1;
-    }
-    else {
-        Node *root_prev = root->prev;
-        Node *root_next = root->next;
-        root_prev->next = root_next;
-        root_next->prev = root_prev;
-        root->prev = root->next = NULL;
-        free(root);
-        return root_1;
-    }
-}
+    FILE *myfile;
+    myfile = fopen("/home/kitanosa/labs/kp7/matrix.txt", "r");
 
-Node *variant(Node *root, List *list, double key){
-    int step = 1;
-    Node *tmp = root;
+    fscanf(myfile, "%d %d",&row, &column);
+    printf("\nРазмеры матрицы %d %d\n", row, column);
+    root->max_row = row;
+    root->max_column = column;
 
-    int i;
-    for(i=key; i <= list->size; i+=key-1){// key-1 шаг из за того что мы удаляем один элемент
-        tmp = root;
-        while (step < i) {
-            tmp = tmp->next;
-            step++;
+    for(int i = 0;i<row;i++){
+        for(int j = 0;j<column;j++){
+            fscanf(myfile, "%f %f",&re, &im);
+            root2 -> re = re;
+            root2 -> im = im;
+            root2 -> row = i;
+            root2 -> column = j;
+            root2 -> max_column = column;
+            root2 -> max_row = row;
+            root2 = add(root2);
         }
-        root = delete_node(root, tmp, list);
-        step = 1;// единицей мы считаем первый элемент. Мы двигаемся ->next потом прибавляем step
-        list->size--;
     }
-    return root ;
+    fclose(myfile);
+    return root;
 }
 
-int main(){
-    Node *tmp = NULL;
-    Node *root = NULL;
-    List *list;
-    list->size = 0;
-    int action;
-    double key;
 
+void print_matrix(Node *root, float row, float column){
+    for(int i = 0;i<row;i++){
+        for(int j = 0;j<column;j++){
+            printf(" %4.1f %4.1f  ",root->re,root->im);
+            root = root -> next;
+        }
+        printf("\n");
+    }
+}
 
-    printf("Меню:\n");
-    printf("1) Создать список\n");
-    printf("2) Добавить в начало\n");
-    printf("3) Добавить в конец\n");
-    printf("4) Печать списка\n");
-    printf("5) Вставить элемент\n");
-    printf("6) Удалить элемент\n");
-    printf("7) Длина списка\n");
-    printf("8) Задание\n");
-    printf("9) Выход\n");
-
-    while (1)
-    {
-        printf("Введите действие: ");
-        scanf("%d", &action);
-
-        switch (action)
-        {
-            case 1:
-            {
-
-                printf("Введите значение корня: ");
-                scanf("%lf", &key);
-                root = create(key);
-                list->tail = root;
-                list->head = root;
-                list->size++;
-                break;
+void print_vector(Node *root, float row, float column){
+    for(int i = 0;i<row;i++){
+        printf("  |%d/%d|  ", 0, root->row);// печать нуля и номера строки
+        for(int j = 0;j<column;j++){
+            if(root->re || root->im) {
+                printf("|%d|%4.1f+(%4.1f*i)| ", root->column, root->re, root->im);// печать столбца и значения
             }
+            root = root -> next;// переход к следующей ноде
+        }
+    }
+    printf("  |%d/%d|\n", 0, 0);
+}
 
-            case 2:
-            {
-                printf("Введите значение: ");
-                scanf("%lf", &key);
-                root = add_left(root, key);
-                list->size++;
-                list->head = root;
-                break;
+
+float find_nonzero_value(Node *root, float value){// ищет первое ненулевое число чтобы с чем было сравнивать в find_near_value. Не с нулем а уже с каким то ненулевым числом
+    if(root->re && root->re != value)
+        return root->re;
+    else if(root->im && root->im != value)
+        return root->im;
+    else
+        find_nonzero_value(root->next, value);
+}
+
+
+float find_near_value(Node *root, float value, float near_value){
+    float now_value;
+    if(root->re != 0) {
+        now_value = root->re;
+        if (abs(value - now_value) < abs(value - near_value) && now_value &&  value != now_value && value != near_value)
+            near_value = now_value;
+    }
+    if(root->im != 0) {
+        now_value = root->im;
+        if (abs(value - now_value) < abs(value - near_value) && now_value &&  value != now_value && value != near_value)
+            near_value = now_value;
+    }
+    if(root->next)
+        return find_near_value(root->next, value, near_value);
+    return near_value;
+}
+
+Node *matrix_copy(Node *root){ // root2 = treeCopy(&root) копирование дерева для вывода измененного дерева
+    Node *root2;
+
+    root2 = create();
+    root2 -> re = root->re;
+    root2 -> im = root->im;
+    root2 -> row = root->row;
+    root2 -> column = root->column;
+    root2->max_column = root->max_column;
+    root2->max_row = root->max_row;
+    if(root->next)
+        root2->next = matrix_copy(root->next);
+    return root2; // возвращает корень дерева скопированного
+}
+
+int delete_row_column(Node *root2, int row, int column, float value) {// берем row column из root и удаляем в root2
+    for (int i = 0; i < root2->max_row; i++) {
+        for (int j = 0; j < root2->max_column; j++) {
+            if (root2->row == row && root2->column == column) {
+                root2->re = (root2->re) * (1/value);
+                root2->im = (root2->im) * (1/value);
             }
-
-            case 3:
-            {
-                printf("Введите значение: ");
-                scanf("%lf", &key);
-                list->tail = add_right(list, key);
-                list->size++;
-                break;
+            else if (root2->row == row || root2->column == column) {
+                root2->re = (root2->re) * (1/value);
+                root2->im = (root2->im) * (1/value);
             }
+            root2 = root2->next;
+        }
+    }
+}
 
-            case 4:
-            {
-                list_print(root, list);
-                break;
+
+    Node *find_node_delete(Node *root, Node *root2, float value){
+        for(int i = 0;i<root->max_row;i++) {
+            for (int j = 0; j < root->max_column; j++) {
+                if (root->re == value)
+                    delete_row_column(root2, root->row, root->column, value);
+                if (root->im == value)
+                    delete_row_column(root2, root->row, root->column, value);
+                root = root->next;
             }
+        }
+        return root2;
+    }
 
-            case 5:
-            {
-                double value;
-                printf("Введите номер эл-та после которого надо вставить число: ");
-                scanf("%lf", &value);// мы вставляем число
-                if(value<list->size) {
-                    printf("Введите значение которое надо вставить : ");
-                    scanf("%lf", &key);
-                    tmp = find_node(root, value);// еще придумать ошибку если не нашел
-                    root = add_node(tmp, list, key);
+// будем обходить root и искать row column и удалять все в root 2
 
-                    list->size++;
-                }
-                else{
-                    printf("Такого номера не существует\n");
-                }
-                break;
-            }
 
-            case 6:
-            {
-                double value;
-                printf("Введите номер эл-та которое надо удалить: ");
-                scanf("%lf", &value);// мы вставляем число
-                if(value <= list->size && value>0) {
-                    tmp = find_node(root, value);
-                    root = delete_node(root, tmp, list);
-                    list->size--;
-                }
-                else
-                    printf("Такого номера не существует\n");
 
-                break;
-            }
+// сделать копию матрицы и с ней работать
 
-            case 7:
-            {
-                printf("Длина списка равна: %d\n", list->size);
-                break;
-            }
+    int main() {
+        int action;
+        int row, column;
+        float value, nonzero_value, near_value;
+        Node *root, *root2;
 
-            case 8:
-            {
-                printf("Удалить каждый k-ый элемент: \n");
-                printf("Введите k: ");
-                scanf("%lf", &key);
-                if(key <= 0 || key > list->size) {
-                    printf("Неверный k-элемент \n");
+        while (1) {
+            printf("Меню:\n");
+            printf("1) Вывести матрицу\n");
+            printf("2) Вывести вектор\n");
+            printf("3) Вывести перобразованный матрицу\n");
+            printf("4) Вывести преобразованную вектор\n");
+            printf("5) Выход\n");
+            printf("Выберите действие: ");
+            scanf("%d", &action);
+
+            switch (action) {
+                case 1: {
+                    root = create();
+                    root = init_vector(root);
+                    row = get_row(root);
+                    column = get_column(root);
+                    print_matrix(root, row, column);
                     break;
                 }
-                root = variant(root, list, key);
-                break;
+
+                case 2: {
+                    print_vector(root, row, column);
+                    break;
+                }
+
+                case 3: {
+
+                    printf("Введите элемент для поиска: ");
+                    scanf("%f", &value);
+                    nonzero_value = find_nonzero_value(root, value);
+                    near_value = find_near_value(root, value, nonzero_value);
+                    printf("Ближайшее значение %4.1f\n", near_value);
+                    root2 = matrix_copy(root);
+                    root2 = find_node_delete(root, root2, near_value);
+                    print_matrix(root2, row, column);
+
+                    break;
+                }
+
+                case 4:
+                {
+                	print_vector(root2, row, column);
+                    break;
+                }
+
+                case 5:
+                    break;
+
+                default:
+                {
+                    printf("Ошибка. Такого пункта меню не существует\n");
+
+                    break;
+                }
             }
 
-            case 9: break;
-
-            default:
-            {
-                printf("Ошибка. Такого пункта меню не существует\n");
-
+            if (action == 5)
                 break;
-            }
         }
-
-        if (action == 9)
-            break;
     }
-
-    return 0;
-}
